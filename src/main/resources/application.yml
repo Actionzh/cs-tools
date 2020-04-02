@@ -1,0 +1,11 @@
+mybatis:
+  config-location: classpath:mybatis/mybatis-config.xml
+  mapper-locations: classpath:mybatis/mapper/*.xml
+  type-aliases-package: com.cs.cstools.entity
+
+spring:
+  dataSource:
+    username: root
+    password: m123
+    url: jdbc:mysql://172.17.0.1:3306/tools?useUnicode=yes&characterEncoding=UTF-8&useLegacyDatetimeCode=false&serverTimezone=GMT%2b8&zeroDateTimeBehavior=convertToNull&useSSL=false
+    driver-class-name: com.mysql.jdbc.Driver
