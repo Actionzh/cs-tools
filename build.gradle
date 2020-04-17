@@ -8,24 +8,24 @@ group = 'com.cs'
 version = '1.0'
 sourceCompatibility = '1.8'
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
-    compile "org.springframework.boot:spring-boot-starter-web"
-    compile "mysql:mysql-connector-java:5.1.45"
+    compile  "org.springframework.boot:spring-boot-starter-web"
     compile("org.mybatis.spring.boot:mybatis-spring-boot-starter:2.0.0")
-    compileOnly "org.projectlombok:lombok:1.18.4"
+    compile "mysql:mysql-connector-java:5.1.45"
+    compile "org.projectlombok:lombok:1.18.4"
     compile 'joda-time:joda-time'
     compile "com.fasterxml.jackson.datatype:jackson-datatype-joda:2.9.8"
     compile 'org.apache.commons:commons-text:1.6'
 
 }
+repositories {
+    mavenCentral()
+}
+
 
 test {
     useJUnitPlatform()

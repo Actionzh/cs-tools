@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.cs.cstools.mapper.TemplateMapper">
     <resultMap id="BaseResultMap" type="com.cs.cstools.entity.Template">
-        <id column="tid" property="id" jdbcType="BIGINT"/>
+        <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="template_id" property="templateId" jdbcType="VARCHAR"/>
         <result column="template_name" property="templateName" jdbcType="VARCHAR"/>
         <result column="template_description" property="templateDescription" jdbcType="VARCHAR"/>
@@ -11,6 +11,7 @@
         <collection property="workFields" javaType="ArrayList"
                     ofType="com.cs.cstools.entity.WorkFields"><!--column="id" select="selectField"-->
             <id column="wid" property="id" jdbcType="BIGINT"/>
+            <result column="title_name" property="titleName" jdbcType="VARCHAR"/>
             <result column="field_name" property="fieldName" jdbcType="VARCHAR"/>
             <result column="field_id" property="fieldId" jdbcType="VARCHAR"/>
             <result column="field_type" property="fieldType" jdbcType="VARCHAR"/>
@@ -26,9 +27,9 @@
 
     <select id="list" resultMap="BaseResultMap">
         SELECT
-        t.id tid,t.template_id,t.template_name,t.template_description,t.date_created,t.last_updated,
-        w.id wid,w.field_name,w.field_id,w.field_type,w.field_required,w.date_created,w.last_updated
-        FROM template t left join work_fields w on t.id= w.template_id where t.id=#{id}
+        t.id id,t.template_id,t.template_name,t.template_description,t.date_created,t.last_updated,
+        w.id wid,w.title_name,w.field_name,w.field_id,w.field_type,w.field_required,w.date_created,w.last_updated
+        FROM template t left join work_fields w on t.template_id= w.template_id where t.id=#{id}
     </select>
     <!--<select id="list" resultMap="BaseResultMap">
         SELECT
@@ -42,27 +43,43 @@
         FROM  work_fields  where template_id=#{id}
     </select>-->
 
-    <insert id="add" parameterType="com.cs.cstools.entity.Tools">
-       INSERT INTO
-       		tools
-       		(name, is_send, path, description, date_created, last_updated)
-       	VALUES
-       		(#{name}, #{isSend}, #{path}, #{description},#{dateCreated}, #{lastUpdated})
+    <select id="listAllTemp" resultMap="BaseResultMap">
+        SELECT
+        t.id id,t.template_id,t.template_name,t.template_description,t.date_created,t.last_updated
+        FROM template t order by last_updated desc limit #{size}
+    </select>
+
+    <insert id="updateTemplate" parameterType="com.cs.cstools.entity.Template" useGeneratedKeys="true"
+            keyProperty="id">
+        insert into template (id,template_id,template_name,template_description,date_created,last_updated)
+        values
+        (#{id},#{templateId},#{templateName},#{templateDescription},now(),now())
+        ON DUPLICATE KEY UPDATE template_id=#{templateId}, template_name=#{templateName},
+        template_description=#{templateDescription},last_updated=now()
     </insert>
 
-    <delete id="delete" parameterType="List">
+    <insert id="insertTemplate" parameterType="com.cs.cstools.entity.Template" useGeneratedKeys="true" keyProperty="id">
+        insert into template (template_id,template_name,template_description,date_created,last_updated)
+        values
+        (#{templateId},#{templateName},#{templateDescription},now(),now())
+    </insert>
+
+    <delete id="deleteField">
         DELETE FROM
-        tools
+        work_fields
         WHERE
-        id in
-        <foreach collection="ids" item="name" index="index" open="(" close=")" separator=",">
-            #{name}
+        template_id=#{templateId} and
+        id not in
+        <foreach collection="ids" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
         </foreach>
     </delete>
 
-    <update id="update" parameterType="com.cs.cstools.entity.Tools">
-      update tools set name=#{name},is_send=#{isSend},path=#{path},description=#{description},last_updated=#{lastUpdated}
-      where id=#{id}
-    </update>
+    <insert id="updateField" parameterType="com.cs.cstools.entity.WorkFields">
+      insert into work_fields (id,title_name,field_name,field_id,field_type,template_id,field_required,date_created,last_updated)
+      values (#{id},#{titleName},#{fieldName},#{fieldId},#{fieldType},#{templateId},#{fieldRequired},now(),now())
+      ON DUPLICATE KEY UPDATE title_name=#{titleName},field_name=#{fieldName},field_id=#{fieldId},field_type=#{fieldType},template_id=#{templateId},
+      field_required=#{fieldRequired},last_updated=now()
+    </insert>
 
 </mapper>

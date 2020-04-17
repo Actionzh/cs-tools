@@ -10,6 +10,7 @@ import org.joda.time.DateTime;
 @ToString(callSuper = true)
 public class WorkFields {
     private Long id;
+    private String titleName;
     private String fieldName;
     private String fieldId;
     private String fieldType;

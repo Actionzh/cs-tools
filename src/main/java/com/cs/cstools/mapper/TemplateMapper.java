@@ -2,7 +2,7 @@ package com.cs.cstools.mapper;
 
 
 import com.cs.cstools.entity.Template;
-import com.cs.cstools.entity.Tools;
+import com.cs.cstools.entity.WorkFields;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -10,9 +10,15 @@ import java.util.List;
 public interface TemplateMapper {
     List<Template> list(@Param("id") Long id);
 
-    void add(Tools tools);
+    List<Template> listAllTemp(@Param("size") int size);
 
-    void update(Tools toolsDTO);
 
-    void delete(@Param("ids") List<Long> ids);
+    int updateTemplate(Template template);
+
+    int insertTemplate(Template template);
+
+
+    void deleteField(@Param("templateId") String templateId, @Param("ids") List<Long> ids);
+
+    void updateField(WorkFields w);
 }
