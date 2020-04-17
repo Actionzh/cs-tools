@@ -1,0 +1,9 @@
+spring:
+  jpa:
+    show-sql: true
+  dataSource:
+    username: root
+    password: m123
+    url: jdbc:mysql://localhost:3306/tools?useUnicode=yes&characterEncoding=UTF-8&useLegacyDatetimeCode=false&serverTimezone=GMT%2b8&zeroDateTimeBehavior=convertToNull&useSSL=false
+    driver-class-name: com.mysql.jdbc.Driver
+
