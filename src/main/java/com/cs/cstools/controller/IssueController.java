@@ -37,4 +37,40 @@ public class IssueController {
 //        webhookService.handleWebhook(params);
     }
 
+    /**
+     * 创建故障
+     *
+     * @param params
+     */
+    @PostMapping(value = "/breakdown")
+    @ResponseBody
+    public void createBreakdown(@RequestParam Map<String, Object> params) {
+        LOGGER.info("access createBreakdown with ticketDTO:" + params.toString());
+
+        issueService.createBreakdown(params);
+    }
+
+    /**
+     * 创建linkflow需求
+     *
+     * @param params
+     */
+    @PostMapping(value = "/need")
+    @ResponseBody
+    public void createNeed(@RequestParam Map<String, Object> params) {
+        LOGGER.info("access createNeed with ticketDTO:" + params.toString());
+        issueService.createNeed(params);
+    }
+
+    /**
+     * 创建devops jira
+     *
+     * @param params
+     */
+    @PostMapping(value = "/lfdo")
+    @ResponseBody
+    public void createDevOps(@RequestParam Map<String, Object> params) {
+        LOGGER.info("access createDevOps with ticketDTO:" + params.toString());
+        issueService.createDevOps(params);
+    }
 }

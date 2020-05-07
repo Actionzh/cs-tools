@@ -1,9 +1,7 @@
 package com.cs.cstools.service.impl;
 
 
-import com.cs.cstools.dto.CsIssue;
-import com.cs.cstools.dto.InternalIssue;
-import com.cs.cstools.dto.ProjectAndType;
+import com.cs.cstools.dto.*;
 import com.cs.cstools.service.IssueService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -73,6 +71,46 @@ public class IssueServiceImpl implements IssueService {
         }
     }
 
+    @Override
+    public void createBreakdown(Map<String, Object> params) {
+        String message = params.get("message").toString();
+        try {
+            BreakdownIssue breakdownIssue = JSON_MAPPER.fromJson(message, BreakdownIssue.class);
+            this.createBreakdown(breakdownIssue);
+        } catch (
+                UnirestException e) {
+            log.error(e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void createNeed(Map<String, Object> params) {
+        String message = params.get("message").toString();
+        try {
+            LinkflowIssue linkflowIssue = JSON_MAPPER.fromJson(message, LinkflowIssue.class);
+            this.createNeed(linkflowIssue);
+        } catch (
+                UnirestException e) {
+            log.error(e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void createDevOps(Map<String, Object> params) {
+        String message = params.get("message").toString();
+        try {
+            DevOpsIssue devOpsIssue = JSON_MAPPER.fromJson(message, DevOpsIssue.class);
+            this.createDevOps(devOpsIssue);
+        } catch (
+                UnirestException e) {
+            log.error(e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
     private String[] convertProjectAndType(String pt) {
         String[] split1 = pt.split("=");
         if (split1[1] != null && !split1[1].isEmpty()) {
@@ -84,18 +122,34 @@ public class IssueServiceImpl implements IssueService {
         return null;
     }
 
+
+    private void createDevOps(DevOpsIssue devOpsIssue) throws UnirestException {
+        ObjectNode payload = createDevOpsBody(devOpsIssue);
+        postJira(payload, devOpsIssue.getTicketId());
+    }
+
+    private void createNeed(LinkflowIssue linkflowIssue) throws UnirestException {
+        ObjectNode payload = createNeedBody(linkflowIssue);
+        postJira(payload, linkflowIssue.getTicketId());
+    }
+
+    private void createBreakdown(BreakdownIssue breakdownIssue) throws UnirestException {
+        ObjectNode payload = createBreakdownBody(breakdownIssue);
+        postJira(payload, breakdownIssue.getTicketId());
+    }
+
     private void createCsIssue(CsIssue issue) throws UnirestException {
         ObjectNode payload = createCsIssueBody(issue);
-        postJira(payload);
+        postJira(payload, issue.getTicketId());
     }
 
 
     private void createIssue(InternalIssue issue) throws UnirestException {
         ObjectNode payload = createIssueBody(issue);
-        postJira(payload);
+        postJira(payload, issue.getTicketId());
     }
 
-    private void postJira(ObjectNode payload) throws UnirestException {
+    private void postJira(ObjectNode payload, String ticketId) throws UnirestException {
         // Connect Jackson ObjectMapper to Unirest
         Unirest.setObjectMapper(new ObjectMapper() {
             private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper
@@ -121,10 +175,8 @@ public class IssueServiceImpl implements IssueService {
         });
         HttpResponse<JsonNode> response = Unirest.post("https://jira.leadswarp.com/rest/api/2/issue")
                 //直接用户名密码
-                .basicAuth("vicki.zhang", "Zhang123")
                 //header带Authorization方式，两种方式2选1
-                //.header("Authorization", "Basic aHVhbWluZy5mYW5nOlF3ZXJhc2RmMTAyMQ==")
-                //.header("Authorization", "Basic c3VjY2VzczpJbml0aWFsMA==")
+                .header("Authorization", "Basic c3VjY2VzczpJbml0aWFsMA==")
                 .header("Accept", "application/json")
                 .header("Content-Type", "application/json")
                 .body(payload)
@@ -134,13 +186,211 @@ public class IssueServiceImpl implements IssueService {
         ObjectNode payload2 = createIssueBody2();
         JsonNode body = response.getBody();
         String key = body.getObject().getString("key");
+        //将jira号写回逸创云
+        updateTicket(key, ticketId);
         HttpResponse<JsonNode> response2 = Unirest.post("https://jira.leadswarp.com/rest/api/2/issue/" + key + "/comment")
-                .basicAuth("vicki.zhang", "Zhang123")
+                .header("Authorization", "Basic c3VjY2VzczpJbml0aWFsMA==")
                 .header("Accept", "application/json")
                 .header("Content-Type", "application/json")
                 .body(payload2)
                 .asJson();
         System.out.println(response2.getBody());
+    }
+
+    private void updateTicket(String key, String ticketId) {
+        try {
+            HttpResponse<JsonNode> jsonNodeHttpResponse = Unirest.put("http://support.linkflowtech.com/apiv2/tickets/" + ticketId + ".json")
+                    .header("Authorization", "Basic dmlja2kuemhhbmdAbGlua2Zsb3d0ZWNoLmNvbS90b2tlbjozZjIzMDA5YzNkZGRiNmM3OTUyNzM4NGM2N2Y0NjI=")
+                    .header("Accept", "application/json")
+                    .header("Content-Type", "application/json")
+                    .body("{\"ticket\":{\"comment\":{\"public\":false,\"content\":\"https://jira.leadswarp.com/browse/" + key + "\"}}}")
+                    .asJson();
+            System.out.println(jsonNodeHttpResponse.getBody());
+        } catch (UnirestException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private ObjectNode createDevOpsBody(DevOpsIssue devOpsIssue) {
+        // The payload definition using the Jackson library
+        String summary = devOpsIssue.getTitle();
+        String description = devOpsIssue.getDescription();
+        JsonNodeFactory jnf = JsonNodeFactory.instance;
+        ObjectNode payload = jnf.objectNode();
+        {
+            ObjectNode fields = payload.putObject("fields");
+            {
+                //标题
+                fields.put("summary", summary);
+                log.info("csissue summary:" + summary);
+
+                fields.put("description", description);
+                log.info("csissue description:" + description);
+                ObjectNode issuetype = fields.putObject("issuetype");
+                {
+                    log.info("csissue issuetype:" + issuetype);
+                    issuetype.put("name", devOpsIssue.getType());
+                }
+
+                ObjectNode project = fields.putObject("project");
+                {
+                    project.put("key", "LFDO");
+                }
+
+
+                if ("Online Support".equals(devOpsIssue.getType())) {
+                    fields.put("customfield_10700", devOpsIssue.getCustomer());
+                    /*ObjectNode customfield_10700 = fields.putObject("customfield_10700");
+                    {
+                        customfield_10700.put("value", devOpsIssue.getCustomer());
+                    }*/
+                }
+
+
+                //优先级
+                ObjectNode priority = fields.putObject("priority");
+                {
+                    switch (devOpsIssue.getPriority()) {
+                        case "低":
+                            priority.put("name", "Low");
+                            break;
+                        case "中":
+                            priority.put("name", "Medium");
+                            break;
+                        case "高":
+                            priority.put("name", "High");
+                            break;
+                        case "紧急":
+                            priority.put("name", "Highest");
+                            break;
+                        default:
+                            priority.put("name", "Lowest");
+                            break;
+
+                    }
+                }
+            }
+        }
+        return payload;
+    }
+
+
+    private ObjectNode createNeedBody(LinkflowIssue linkflowIssue) {
+        // The payload definition using the Jackson library
+        String summary = linkflowIssue.getTitle();
+        String description = linkflowIssue.getDescription();
+        JsonNodeFactory jnf = JsonNodeFactory.instance;
+        ObjectNode payload = jnf.objectNode();
+        {
+            ObjectNode fields = payload.putObject("fields");
+            {
+                //标题
+                fields.put("summary", summary);
+                log.info("csissue summary:" + summary);
+
+                fields.put("description", description);
+                log.info("csissue description:" + description);
+                ObjectNode issuetype = fields.putObject("issuetype");
+                {
+                    log.info("csissue issuetype:" + issuetype);
+                    issuetype.put("id", "10001");
+                }
+
+                ObjectNode project = fields.putObject("project");
+                {
+                    project.put("key", "LINKFLOW");
+                }
+
+                //上报人
+                ObjectNode reporter = fields.putObject("reporter");
+                {
+                    reporter.put("name", linkflowIssue.getAssignee().split("@")[0]);
+                }
+                //优先级
+                ObjectNode priority = fields.putObject("priority");
+                {
+                    switch (linkflowIssue.getPriority()) {
+                        case "低":
+                            priority.put("name", "Low");
+                            break;
+                        case "中":
+                            priority.put("name", "Medium");
+                            break;
+                        case "高":
+                            priority.put("name", "High");
+                            break;
+                        case "紧急":
+                            priority.put("name", "Highest");
+                            break;
+                        default:
+                            priority.put("name", "Lowest");
+                            break;
+
+                    }
+                }
+            }
+        }
+        return payload;
+    }
+
+
+    private ObjectNode createBreakdownBody(BreakdownIssue breakdownIssue) {
+        // The payload definition using the Jackson library
+        String summary = breakdownIssue.getTitle();
+        String description = breakdownIssue.getDescription();
+        JsonNodeFactory jnf = JsonNodeFactory.instance;
+        ObjectNode payload = jnf.objectNode();
+        {
+            ObjectNode fields = payload.putObject("fields");
+            {
+                //标题
+                fields.put("summary", summary);
+                log.info("csissue summary:" + summary);
+
+                fields.put("description", description);
+                log.info("csissue description:" + description);
+                ObjectNode issuetype = fields.putObject("issuetype");
+                {
+                    log.info("csissue issuetype:" + issuetype);
+                    issuetype.put("id", "10004");
+                }
+
+                ObjectNode project = fields.putObject("project");
+                {
+                    project.put("key", "NAZAIO");
+                }
+
+                //Environment
+                ObjectNode customfield_10202 = fields.putObject("customfield_10202");
+                {
+                    customfield_10202.put("value", breakdownIssue.getEnv());
+                }
+
+                //优先级
+                ObjectNode priority = fields.putObject("priority");
+                {
+                    switch (breakdownIssue.getPriority()) {
+                        case "低":
+                            priority.put("name", "Low");
+                            break;
+                        case "中":
+                            priority.put("name", "Medium");
+                            break;
+                        case "高":
+                            priority.put("name", "High");
+                            break;
+                        case "紧急":
+                            priority.put("name", "Highest");
+                            break;
+                        default:
+                            priority.put("name", "Lowest");
+                            break;
+
+                    }
+                }
+            }
+        }
+        return payload;
     }
 
     private ObjectNode createCsIssueBody(CsIssue issue) {
@@ -292,9 +542,7 @@ public class IssueServiceImpl implements IssueService {
         String type = split[1];
         HttpResponse<JsonNode> response = Unirest.get("https://jira.leadswarp.com/rest/api/2/issue/createmeta")
                 //直接用户名密码
-                //.basicAuth("huaming.fang", "password")
                 //header带Authorization方式，两种方式2选1
-                //.header("Authorization", "Basic aHVhbWluZy5mYW5nOlF3ZXJhc2RmMTAyMQ==")
                 .header("Authorization", "Basic c3VjY2VzczpJbml0aWFsMA==")
                 .header("Accept", "application/json")
                 .header("Content-Type", "application/json")

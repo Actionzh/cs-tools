@@ -6,6 +6,11 @@ import java.util.List;
 
 @Data
 public class InternalIssue {
+
+    /**
+     * 工单id
+     */
+    String ticketId;
     /**
      * 标题
      */

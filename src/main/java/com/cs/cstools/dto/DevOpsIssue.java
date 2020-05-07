@@ -3,7 +3,7 @@ package com.cs.cstools.dto;
 import lombok.Data;
 
 @Data
-public class CsIssue {
+public class DevOpsIssue {
 
     /**
      * 工单id
@@ -20,27 +20,18 @@ public class CsIssue {
     String description;
 
     /**
-     * 受理客服邮箱
+     * 类型
      */
-    String assignee;
+    String type;
 
     /**
-     * jira_项目
+     * 环境
      */
-    String project;
-
-    /**
-     * jira_类型
-     */
-    String issueType;
+    String customer;
 
     /**
      * 优先级
      */
     String priority;
 
-    /**
-     * taskType
-     */
-    String taskType;
 }
