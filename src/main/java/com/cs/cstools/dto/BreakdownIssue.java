@@ -1,8 +1,10 @@
 package com.cs.cstools.dto;
 
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 public class BreakdownIssue {
 
     /**
@@ -33,5 +35,10 @@ public class BreakdownIssue {
      * 优先级
      */
     String priority;
+
+    /**
+     * 受理客服邮箱
+     */
+    String assignee;
 
 }

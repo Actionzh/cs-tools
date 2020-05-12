@@ -75,7 +75,13 @@ public class IssueServiceImpl implements IssueService {
     public void createBreakdown(Map<String, Object> params) {
         String message = params.get("message").toString();
         try {
-            BreakdownIssue breakdownIssue = JSON_MAPPER.fromJson(message, BreakdownIssue.class);
+            String[] split = message.split("\\|\\|\\|\\|");
+            BreakdownIssue breakdownIssue = BreakdownIssue.builder().ticketId(split[0])
+                    .title(split[1])
+                    .env(split[2])
+                    .priority(split[3])
+                    .assignee(split[4])
+                    .description(split[5]).build();
             this.createBreakdown(breakdownIssue);
         } catch (
                 UnirestException e) {
@@ -88,7 +94,13 @@ public class IssueServiceImpl implements IssueService {
     public void createNeed(Map<String, Object> params) {
         String message = params.get("message").toString();
         try {
-            LinkflowIssue linkflowIssue = JSON_MAPPER.fromJson(message, LinkflowIssue.class);
+            String[] split = message.split("\\|\\|\\|\\|");
+            //LinkflowIssue linkflowIssue = JSON_MAPPER.fromJson(message, LinkflowIssue.class);
+            LinkflowIssue linkflowIssue = LinkflowIssue.builder().ticketId(split[0])
+                    .title(split[1])
+                    .assignee(split[2])
+                    .priority(split[3])
+                    .description(split[4]).build();
             this.createNeed(linkflowIssue);
         } catch (
                 UnirestException e) {
@@ -101,7 +113,16 @@ public class IssueServiceImpl implements IssueService {
     public void createDevOps(Map<String, Object> params) {
         String message = params.get("message").toString();
         try {
-            DevOpsIssue devOpsIssue = JSON_MAPPER.fromJson(message, DevOpsIssue.class);
+            String[] split = message.split("\\|\\|\\|\\|");
+            //String[] split1 = message.split("\"[(.*?)]\"");
+
+            DevOpsIssue devOpsIssue = DevOpsIssue.builder().ticketId(split[0])
+                    .title(split[1])
+                    .type(split[2])
+                    .priority(split[3])
+                    .customer(split[4])
+                    .assignee(split[5])
+                    .description(split[6]).build();
             this.createDevOps(devOpsIssue);
         } catch (
                 UnirestException e) {
@@ -183,18 +204,39 @@ public class IssueServiceImpl implements IssueService {
                 .asJson();
 
         System.out.println(response.getBody());
-        ObjectNode payload2 = createIssueBody2();
         JsonNode body = response.getBody();
-        String key = body.getObject().getString("key");
-        //将jira号写回逸创云
-        updateTicket(key, ticketId);
-        HttpResponse<JsonNode> response2 = Unirest.post("https://jira.leadswarp.com/rest/api/2/issue/" + key + "/comment")
-                .header("Authorization", "Basic c3VjY2VzczpJbml0aWFsMA==")
-                .header("Accept", "application/json")
-                .header("Content-Type", "application/json")
-                .body(payload2)
-                .asJson();
-        System.out.println(response2.getBody());
+        if (201 == (response.getStatus())) {
+            ObjectNode payload2 = createIssueBody2();
+            String key = body.getObject().getString("key");
+            //将jira号写回逸创云
+            updateTicket(key, ticketId);
+            HttpResponse<JsonNode> response2 = Unirest.post("https://jira.leadswarp.com/rest/api/2/issue/" + key + "/comment")
+                    .header("Authorization", "Basic c3VjY2VzczpJbml0aWFsMA==")
+                    .header("Accept", "application/json")
+                    .header("Content-Type", "application/json")
+                    .body(payload2)
+                    .asJson();
+            System.out.println(response2.getBody());
+        } else {
+            //将错误信息写回逸创云
+            updateTicket(body, ticketId);
+
+        }
+
+    }
+
+    private void updateTicket(JsonNode body, String ticketId) {
+        try {
+            HttpResponse<JsonNode> jsonNodeHttpResponse = Unirest.put("http://support.linkflowtech.com/apiv2/tickets/" + ticketId + ".json")
+                    .header("Authorization", "Basic dmlja2kuemhhbmdAbGlua2Zsb3d0ZWNoLmNvbS90b2tlbjozZjIzMDA5YzNkZGRiNmM3OTUyNzM4NGM2N2Y0NjI=")
+                    .header("Accept", "application/json")
+                    .header("Content-Type", "application/json")
+                    .body("{\"ticket\":{\"comment\":{\"public\":false,\"content\":\"" + body.toString() + "\"}}}")
+                    .asJson();
+            System.out.println(jsonNodeHttpResponse.getBody());
+        } catch (UnirestException e) {
+            log.error(e.getMessage());
+        }
     }
 
     private void updateTicket(String key, String ticketId) {
@@ -246,6 +288,13 @@ public class IssueServiceImpl implements IssueService {
                     }*/
                 }
 
+               /* if (!StringUtils.isEmpty(devOpsIssue.getAssignee())) {
+                    //上报人
+                    ObjectNode reporter = fields.putObject("reporter");
+                    {
+                        reporter.put("name", devOpsIssue.getAssignee().split("@")[0]);
+                    }
+                }*/
 
                 //优先级
                 ObjectNode priority = fields.putObject("priority");
@@ -360,6 +409,13 @@ public class IssueServiceImpl implements IssueService {
                     project.put("key", "NAZAIO");
                 }
 
+                /*if (!StringUtils.isEmpty(breakdownIssue.getAssignee())) {
+                    //上报人
+                    ObjectNode reporter = fields.putObject("reporter");
+                    {
+                        reporter.put("name", breakdownIssue.getAssignee().split("@")[0]);
+                    }
+                }*/
                 //Environment
                 ObjectNode customfield_10202 = fields.putObject("customfield_10202");
                 {
