@@ -245,7 +245,7 @@ public class IssueServiceImpl implements IssueService {
                     .header("Authorization", "Basic dmlja2kuemhhbmdAbGlua2Zsb3d0ZWNoLmNvbS90b2tlbjozZjIzMDA5YzNkZGRiNmM3OTUyNzM4NGM2N2Y0NjI=")
                     .header("Accept", "application/json")
                     .header("Content-Type", "application/json")
-                    .body("{\"ticket\":{\"comment\":{\"public\":false,\"content\":\"https://jira.leadswarp.com/browse/" + key + "\"}}}")
+                    .body("{\"ticket\":{\"comment\":{\"public\":false,\"content\":\"使用内部员工账号授权，此条信息由系统自动返回:<br/> https://jira.leadswarp.com/browse/" + key + "\"}}}")
                     .asJson();
             System.out.println(jsonNodeHttpResponse.getBody());
         } catch (UnirestException e) {
